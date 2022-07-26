@@ -7,19 +7,28 @@ import smtplib
 import easyimap as e     #to read emails
 import requests
 import email
-import traceback 
+import traceback
 import cv2
-import random
 import imaplib
 from requests import get
 import datetime
-import smtplib
 import pygame
 import pyjokes
-import random
 import sys
 from newsapi import NewsApiClient
 import pycountry
+import cvzone
+import mediapipe 
+from cvzone.HandTrackingModule import HandDetector
+import numpy as np
+import math
+from ctypes import cast, POINTER
+from comtypes import CLSCTX_ALL
+from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
+import random as rnd
+import pyautogui
+import random
+
 
 
 
@@ -54,8 +63,10 @@ def takeCommand():
 
     r=sr.Recognizer()
     with sr.Microphone() as source:
+        r.adjust_for_ambient_noise(source,duration=1)
         print("Listening...")
-        r.pause_threshold = 1.3      #pause after speaking change
+        r.pause_threshold = 0.5                #pause after speaking change
+        #r.energy_threshold = 200
         audio = r.listen(source)
 
     try:
@@ -63,16 +74,18 @@ def takeCommand():
         query = r.recognize_google(audio, language='en-in')
         print(f"User said: {query.lower()}\n")
     
-    except Exception as e:
+    except Exception as p:
         speak("Say that again please...")
         print("Say that again please...")
+        
         return "None"
+        # return e
     return query
 
 def sendEmail(to, content):
-    server = smtplib.SMTP('smtp.gmail.com', 587)
-    server.ehlo()
-    server.starttls()
+    server = smtplib.SMTP('smtp.gmail.com', 587)                 
+    server.ehlo()                                                #identifies the object as an esmtp server
+    server.starttls()                                            #puts smtp connection in tls(transport layer security)
     server.login('smyanatheassistant@gmail.com', 'smyana123.')
     server.sendmail('smyanatheassistant@gmail.com', to, content)
     server.close()
@@ -167,7 +180,6 @@ def get_weather(city):
 def weather_fun():
     print("Which city's weather report you wanna know")
     speak("Which city's weather report you wanna know")
-    #query = query.replace("weather","")
     city = takeCommand().lower()
             
     q=get_weather(city)
@@ -189,7 +201,6 @@ def wiki_pedia(query):
 def game_fun():
     speak("Starting a fun game for you")
     again = True
-    #query = query.replace("game","")
     while again:
         results = playgame()
         print("Well played. Your score is"+ str(results))
@@ -327,6 +338,175 @@ def playgame():
 
     return score
 
+
+
+#paint gesture
+def paint_gesture():
+    brushThickness = 15
+
+
+    folderPath = 'header'
+    myList = os.listdir(folderPath)
+    overlayList = []
+
+    for imPath in myList:
+        image = cv2.imread(f'{folderPath}/{imPath}')#
+        overlayList.append(image)
+    header = overlayList[1]
+    drawColor = (0,0,255)
+
+    cap = cv2.VideoCapture(0)
+    cap.set(3, 1280)
+    cap.set(4, 720)
+
+
+    detector = HandDetector(detectionCon=0.8, maxHands=1)
+    xp,yp = 0,0
+    imgCanvas = np.zeros((720,1280,3), np.uint8)
+
+    while True:
+        success, img = cap.read()
+    
+        img = cv2.flip(img,1)
+
+        hands,img = detector.findHands(img)
+        if hands:
+            hand = hands[0]
+            lmList = hand['lmList']
+            if len(lmList) != 0:
+            
+                x1,y1 = lmList[8][0] , lmList[8][1]
+                x2,y2 = lmList[12][0] , lmList[12][1]
+
+            fingers = detector.fingersUp(hand)
+            if fingers[1] and fingers[2]:
+                xp,yp = 0,0
+        
+                if y1 < 170:
+                    if 250<x1<360:
+                        header= overlayList[1]
+                        drawColor = (0,0,255)
+                
+                
+                    elif 450<x1<680:
+                        header= overlayList[2]
+                        drawColor = (0,255,0)
+                    elif 750<x1<1000:
+                        header= overlayList[3]
+                        drawColor = (0,255,255)
+                cv2.rectangle(img,(x1,y1-25),(x2,y2+25),drawColor,cv2.FILLED)
+
+            if fingers[1] and fingers[2]==False:
+                cv2.circle(img,(x1,y1),15,drawColor,cv2.FILLED)
+                if xp==0 and yp==0:
+                    xp,yp = x1,y1
+
+                cv2.line(img,(xp,yp),(x1,y1),drawColor,brushThickness)
+                cv2.line(imgCanvas,(xp,yp),(x1,y1),drawColor,brushThickness)
+                xp,yp = x1,y1
+        imgGray = cv2.cvtColor(imgCanvas,cv2.COLOR_BGR2GRAY)
+        _,imgInv = cv2.threshold(imgGray,50,255,cv2.THRESH_BINARY_INV)
+        imgInv = cv2.cvtColor(imgInv,cv2.COLOR_GRAY2BGR)
+        img = cv2.bitwise_and(img,imgInv)
+        img = cv2.bitwise_or(img,imgCanvas)
+
+        img[0:170,0:1204] = header
+        cv2.imshow('Image', img)
+        cv2.imshow('Canvas', imgCanvas)
+
+        key = cv2.waitKey(1)
+        if key == ord('q'):
+            break
+    
+
+    
+
+#volume gesture
+def volume_gesture():
+    width, height = 1000, 720
+    ww, hh = list(pyautogui.size())[0], list(pyautogui.size())[1]
+
+    cap = cv2.VideoCapture(0)
+    cap.set(3, width)
+    cap.set(4, height)
+    gestureThreshold = 300
+    buttonPressed = False
+    buttonCounter = 0
+    buttonDelay = 30
+   
+
+    detector = HandDetector(detectionCon=0.8, maxHands=1)
+
+
+
+    devices = AudioUtilities.GetSpeakers()
+    interface = devices.Activate(
+        IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+    volume = cast(interface, POINTER(IAudioEndpointVolume))
+
+    volRange = volume.GetVolumeRange()
+    volume.SetMasterVolumeLevel(0, None)
+    minVol = volRange[0]
+    maxVol = volRange[1]
+
+
+    while True:
+        success, img = cap.read()  
+        hands, img = detector.findHands(img, flipType=False)
+        cv2.line(img, (0, gestureThreshold), (width, gestureThreshold), (0, 255, 0), 5)
+
+
+        if hands and buttonPressed is False:
+            hand = hands[0]
+            fingers = detector.fingersUp(hand)
+            cx, cy = hand['center']
+            lmList = hand['lmList']
+            x2,y2 = lmList[8][0] , lmList[8][1]
+
+            xVal = int(np.interp(lmList[8][0],[width//5,width//3],[0,width]))
+            yVal = int(np.interp(lmList[8][1],[150,height//3],[0,height]))
+            indexFinger = xVal,yVal
+        
+            if cy <= gestureThreshold:
+                if len(lmList) != 0:
+                    x1,y1 = lmList[4][0] , lmList[4][1]
+                    x2,y2 = lmList[8][0] , lmList[8][1]
+                    cx_new , cy_new = (x1+x2)//2, (y1+y2)//2
+
+                    cv2.circle(img,(x1,y1),8,(255,0,255),cv2.FILLED)
+                    cv2.circle(img,(x2,y2),8,(255,0,255),cv2.FILLED)
+                    cv2.line(img,(x1,y1),(x2,y2),(255,0,255),5)
+                    cv2.circle(img,(cx_new,cy_new),8,(255,0,255),cv2.FILLED)
+
+                    length = math.hypot(x2-x1, y2-y1)
+
+                    vol = np.interp(length, [15,100], [minVol, maxVol])
+                    volume.SetMasterVolumeLevel(vol, None)
+            
+
+                    if length < 50:
+                        cv2.circle(img,(cx_new,cy_new),15,(0,255,0),cv2.FILLED)
+
+
+    
+        if buttonPressed:
+            buttonCounter += 1
+            if buttonCounter > buttonDelay :
+                buttonCounter=0
+                buttonPressed = False
+
+    
+        cv2.imshow('Image', img)
+        key = cv2.waitKey(1)
+        if key == ord('q'):
+            break
+    
+    
+
+
+
+
+
 def youtube_fun():
     print("Opening youtube...")
     webbrowser.register('chrome', None, webbrowser.BackgroundBrowser("C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe"))
@@ -364,7 +544,10 @@ def camera_fun():
         ret, img = cap.read()
         cv2.imshow('webcam', img)
         k = cv2.waitKey(20)
-        if k == 27:
+        # if k == 27:
+        #     break
+        key = cv2.waitKey(1)
+        if key == ord('q'):
             break
     cap.release()
     cv2.destroyAllWindows()
@@ -452,7 +635,6 @@ def main_fun():
         query = takeCommand().lower()
         
         
-
         #wikipedia
         if 'wikipedia' in query:
             wiki_pedia(query)
@@ -516,34 +698,20 @@ def main_fun():
         elif "news" in query:
             news_fun()
 
+        #paint gesture
+        elif "paint" in query:
+            paint_gesture()
+
+    
+
+        #volume control gesture
+        elif "volume"in query:
+            volume_gesture()
+
 
 main_fun()
 
 
-"""def start():  
-
-    HEIGHT = 589
-    WIDTH = 900
-
-    root = tk.Tk()
-
-    canvas = tk.Canvas(root, height=HEIGHT, width=WIDTH,background='black')
-    canvas.pack()
-
-    bg_img= tk.PhotoImage(file='try2.png')
-    bg_label = tk.Label(root, image=bg_img)
-    bg_label.place(relwidth=0.4, relheight=1)
-
-    lower_frame = tk.Frame(root,bg='black')
-    lower_frame.place(relx=0.9,rely=0.2,relwidth=1,relheight=0.5,anchor='n')
-
-    label = tk.Label(lower_frame,font=40,background="black", foreground='white')
-    label.grid(row=0,column=0,columnspan=2)
-
-    button = tk.Button(root, text='Start',font=40,background='black',foreground='white',command=main_fun)
-    button.place(relx=0.5,rely=0.02,relheight=0.05,relwidth=0.4)
-
-    root.mainloop()"""
 
     
 
