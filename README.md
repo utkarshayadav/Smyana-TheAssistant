@@ -5,12 +5,12 @@ Functionalities of the assistant:
 ●	Draw on screen with hand gesture.
 ●	It can send emails.
 ●	It can read emails.
-●	It shows the user the latest news from various categories as per choice. 
+●	It shows the user the latest news from categories which usrr chooses. 
 ●	It can open the command prompt, your favorite IDE, etc. 
 ●	It can play music. 
 ●	It can play games.
 ●	It can do Wikipedia searches.
-●	It can open websites like Google, YouTube, etc., in a web browser. 
+●	It can open websites like Google, YouTube, etc. in a web browser. 
 ●	It can give weather forecasts.
 ●	It can have basic conversations with the user.
 
