@@ -5,7 +5,7 @@ Functionalities of the assistant:
 ●	Draw on screen with hand gesture.
 ●	It can send emails.
 ●	It can read emails.
-●	It shows the user the latest news from categories which usrr chooses. 
+●	It shows the user the latest news from categories which user chooses. 
 ●	It can open the command prompt, your favorite IDE, etc. 
 ●	It can play music. 
 ●	It can play games.
