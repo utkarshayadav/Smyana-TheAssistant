@@ -1,7 +1,7 @@
 Smyana is a voice and gesture based virtual assisstant.
 Functionalities of the assistant:
 
-●	It works on gesture controls, can increase/ decrease volume of the system by pinching and expanding the thumb and index fingers
+●	It works on gesture controls, can increase/decrease volume of the system by pinching and expanding the thumb and index fingers
 ●	Draw on screen with hand gesture.
 ●	It can send emails.
 ●	It can read emails.
@@ -13,6 +13,4 @@ Functionalities of the assistant:
 ●	It can open websites like Google, YouTube, etc., in a web browser. 
 ●	It can give weather forecasts.
 ●	It can have basic conversations with the user.
-●	It works on gesture controls also, can increase/ decrease volume of the system
-●	Paint on screen with hand gesture.
 
